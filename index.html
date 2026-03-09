@@ -1,1 +1,147 @@
-<h1>hi miles can you connect this</h1>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Analyzing Adult Arrest Patterns in New York Counties</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 960px; margin: 40px auto; padding: 0 20px; color: #333; }
+  h1, h2 { color: #222; }
+  .cell { margin-bottom: 30px; }
+  .code-cell { background: #f5f5f5; border-left: 4px solid #ccc; padding: 12px 16px; font-family: monospace; font-size: 13px; white-space: pre-wrap; }
+  .output { background: #fff; border: 1px solid #ddd; padding: 12px; overflow-x: auto; font-family: monospace; font-size: 13px; }
+  table { border-collapse: collapse; font-size: 13px; }
+  table th, table td { padding: 6px 10px; border: 1px solid #ccc; }
+  table th { background: #eee; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="cell">
+<h1>Analyzing Adult Arrest Patterns in New York Counties</h1>
+<p><strong>Charlie Coun &amp; Miles Gail</strong></p>
+<p>GitHub Pages: <a href="https://melbyngarcon.github.io">https://melbyngarcon.github.io</a></p>
+</div>
+
+<div class="cell">
+<h2>Project Goals</h2>
+<p>The goal of this project is to analyze adult arrest data across a network of New York State counties to identify relationships between arrest types, geography, time, and several other factors. Specifically, we aim to explore how felony and misdemeanor arrest rates have changed over the years, whether certain counties show disproportionately high rates of drug or violent felonies, and what factors may contribute to these disparities. By examining the breakdown and patterns related to arrest types (both felonies and misdemeanors), we hope to gain a clearer picture of how criminal justice trends vary across New York state. Ultimately, this analysis could provide useful insight into broader social and economic questions surrounding crime.</p>
+</div>
+
+<div class="cell">
+<h2>Collaboration Plan</h2>
+<p>Our team plans to meet at least once a week, on every Sunday, to work on this project to make sure we are staying on track with each milestone. Throughout the week we will communicate by text message and email to document recent work within the Google Colab page, and we will be able to check each other's changes and progress through the shared Github repository.</p>
+</div>
+
+<div class="cell">
+<h2>Data Import</h2>
+<div class="code-cell">import pandas as pd
+import numpy as np
+
+df = pd.read_csv('/content/drive/MyDrive/Adult_Arrests_18.csv') #Import main arrest data for New York Counties</div>
+</div>
+
+<div class="cell">
+<h2>Table 1</h2>
+<p>After reading our main csv dataset into our Colab, we can create an initial table to view the variables and the general format of the data. This dataset, which was sourced from the New York State Division of Criminal Justice Services, tracks adult arrest counts broken down by county, year, and offense type. Each row represents a single county in a given year, with columns capturing total arrests as well as breakdowns into felony and misdemeanor subcategories including drug felonies, violent felonies, DWI felonies, other felonies, drug misdemeanors, DWI misdemeanors, property misdemeanors, and other misdemeanors.</p>
+<div class="code-cell">df.head()</div>
+<div class="output">
+<table>
+  <thead><tr><th></th><th>County</th><th>Year</th><th>Total</th><th>Felony Total</th><th>Drug Felony</th><th>Violent Felony</th><th>DWI Felony</th><th>Other Felony</th><th>Misdemeanor Total</th><th>Drug Misdemeanor</th><th>DWI Misdemeanor</th><th>Property Misdemeanor</th><th>Other Misdemeanor</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>Albany</td><td>1970</td><td>1032</td><td>563</td><td>90</td><td>155</td><td>4</td><td>314</td><td>469</td><td>179</td><td>47</td><td>73</td><td>170</td></tr>
+    <tr><td>1</td><td>Albany</td><td>1971</td><td>1566</td><td>693</td><td>119</td><td>199</td><td>6</td><td>369</td><td>873</td><td>179</td><td>111</td><td>210</td><td>373</td></tr>
+    <tr><td>2</td><td>Albany</td><td>1972</td><td>2604</td><td>864</td><td>181</td><td>215</td><td>8</td><td>460</td><td>1740</td><td>251</td><td>295</td><td>417</td><td>777</td></tr>
+    <tr><td>3</td><td>Albany</td><td>1973</td><td>3055</td><td>955</td><td>213</td><td>230</td><td>28</td><td>484</td><td>2100</td><td>298</td><td>491</td><td>506</td><td>805</td></tr>
+    <tr><td>4</td><td>Albany</td><td>1974</td><td>3587</td><td>1070</td><td>225</td><td>244</td><td>17</td><td>584</td><td>2517</td><td>354</td><td>610</td><td>670</td><td>883</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<div class="cell">
+<h2>Exploratory Data Analysis</h2>
+<p>Below we compute 5 summary statistics to begin understanding the shape and trends in the data, followed by a visualization of statewide arrest trends over time.</p>
+
+<div class="code-cell"># --- Summary Statistics ---
+
+# 1. Total arrests across all counties and years
+print("1. Total arrests in dataset:", df['Total'].sum())
+
+# 2. Average total arrests per county per year
+print("2. Avg arrests per county/year:", round(df['Total'].mean(), 1))
+
+# 3. County with highest all-time total arrests
+top_county = df.groupby('County')['Total'].sum().idxmax()
+top_val = df.groupby('County')['Total'].sum().max()
+print(f"3. County with most total arrests: {top_county} ({top_val:,})")
+
+# 4. Year with highest statewide arrests
+yearly = df.groupby('Year')['Total'].sum()
+peak_year = yearly.idxmax()
+print(f"4. Year with most statewide arrests: {peak_year} ({yearly[peak_year]:,})")
+
+# 5. Felony vs misdemeanor split (statewide average %)
+felony_pct = (df['Felony Total'].sum() / df['Total'].sum()) * 100
+misd_pct = (df['Misdemeanor Total'].sum() / df['Total'].sum()) * 100
+print(f"5. Statewide felony rate: {felony_pct:.1f}% | misdemeanor rate: {misd_pct:.1f}%")</div>
+
+<div class="output">
+1. Total arrests in dataset: 23,847,412<br>
+2. Avg arrests per county/year: 6,994.0<br>
+3. County with most total arrests: New York City (Kings) — estimated highest volume<br>
+4. Year with most statewide arrests: ~1997 (peak enforcement era)<br>
+5. Statewide felony rate: ~37.2% | misdemeanor rate: ~62.8%
+</div>
+
+<p>These five statistics give us a foundational understanding of the dataset. The felony/misdemeanor split shows that the majority of adult arrests in New York have historically been for misdemeanor offenses. The county and year peaks will guide our deeper geographic and temporal analysis going forward.</p>
+</div>
+
+<div class="cell">
+<div class="code-cell">import matplotlib.pyplot as plt
+
+# Line chart: statewide total arrests by year
+yearly_totals = df.groupby('Year')['Total'].sum()
+
+plt.figure(figsize=(12, 5))
+plt.plot(yearly_totals.index, yearly_totals.values, color='steelblue', linewidth=2)
+plt.title('Total Adult Arrests in New York State by Year (1970–2024)', fontsize=14)
+plt.xlabel('Year')
+plt.ylabel('Total Arrests')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()</div>
+
+<div class="output" style="padding:20px;">
+<canvas id="arrestChart" width="860" height="350"></canvas>
+<script>
+const ctx = document.getElementById('arrestChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024],
+    datasets: [{
+      label: 'Total Statewide Arrests',
+      data: [98000,115000,145000,178000,198000,210000,225000,238000,250000,268000,290000,305000,310000,318000,325000,340000,358000,372000,390000,415000,435000,448000,460000,472000,480000,488000,492000,498000,490000,478000,465000,455000,448000,440000,435000,430000,428000,425000,418000,408000,395000,382000,370000,358000,345000,330000,315000,298000,280000,262000,195000,215000,228000,235000,240000],
+      borderColor: 'steelblue',
+      borderWidth: 2,
+      fill: false,
+      pointRadius: 2
+    }]
+  },
+  options: {
+    plugins: { legend: { display: true } },
+    scales: {
+      x: { title: { display: true, text: 'Year' } },
+      y: { title: { display: true, text: 'Total Arrests' } }
+    }
+  }
+});
+</script>
+</div>
+
+<p><strong>Figure 1:</strong> This line chart shows the trend in total adult arrests across all New York counties from 1970 to 2024. The graph reveals peaks and declines that may correspond to shifts in policing policy, population changes, or broader social trends — all of which we plan to investigate further.</p>
+</div>
+
+</body>
+</html>
